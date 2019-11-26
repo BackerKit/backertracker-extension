@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+require 'json'
+require 'pathname'
+
+pn = Pathname.new([__dir__, '..', 'src', 'manifest.json'].join('/'))
+
+json = JSON.parse(File.open(pn).read)
+
+version = json['version']
+
+puts "Building BackerTracker version #{version}"
+
+puts "Storing in dist BackerTracker Version #{version}"
+
+path_to_zip =  Pathname.new([__dir__, '..', 'src'].join('/'))
+puts path_to_zip
+destination_filename = Pathname.new([__dir__, '..', 'dist', "backertracker-extension-#{version}.zip"].join('/'))
+puts `zip -r -FS #{destination_filename} "#{path_to_zip}" -x *.git*`
