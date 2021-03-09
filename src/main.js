@@ -7,7 +7,8 @@
         var parser = document.createElement('a');
         parser.href = url;
 
-        $('<iframe>', { src: 'https://www.backerkit.com' + parser.pathname + '/iframe', frameBorder: "0", width: prependTarget.width(), height: '360px', scrolling: 'no' }).prependTo(prependTarget);
+
+        $('<iframe>', { src: 'https://www.backerkit.com' + parser.pathname + '/iframe', frameBorder: "0", height:'400px', width: prependTarget.width(), scrolling: 'no' }).prependTo(prependTarget);
     }
 
     function doKickstarter() {
