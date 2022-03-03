@@ -3,7 +3,7 @@
     "manifest_version": 2,
     "name": "BackerTracker by BackerKit",
     "short_name":"BK Tracker",
-    "version": "6.1",
+    "version": "6.2",
     "description": "Show BackerTracker on Kickstarter/Indiegogo projects",
   
     "icons": {

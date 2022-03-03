@@ -27,7 +27,7 @@
         surveyIframe.prependTo($('body'));
 
         window.addEventListener("message", function (event) {
-            if(event.orgin.indexOf('www.backerkit.') === -1)
+            if(event.origin.indexOf('www.backerkit.') === -1)
                 return
                
             var showIframe = event.data.split(':')[1]
