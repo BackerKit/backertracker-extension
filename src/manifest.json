@@ -3,7 +3,7 @@
     "manifest_version": 2,
     "name": "BackerTracker by BackerKit",
     "short_name":"BK Tracker",
-    "version": "6.0",
+    "version": "6.1",
     "description": "Show BackerTracker on Kickstarter/Indiegogo projects",
   
     "icons": {
@@ -18,7 +18,7 @@
     "content_scripts": [
       {
         "matches": ["*://*.kickstarter.com/projects/*", "*://*.indiegogo.com/projects/*"],
-        "js": ["lib/jquery-2.1.1.min.js", "main.js"]
+        "js": ["lib/jquery-3.6.0.min.js", "main.js"]
       }
     ]
   

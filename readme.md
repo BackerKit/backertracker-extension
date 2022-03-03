@@ -1,6 +1,6 @@
 BackerTracker Extension by BackerKit.
 
-Current version 6.0
+Current version 6.1
 
 
 
