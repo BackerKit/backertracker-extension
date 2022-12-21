@@ -1,5 +1,9 @@
 ; (function () {
 
+    function domainRoot(){
+        return 'https://www.backerkit.com';
+    }
+
     function insertIframe(url, prependTarget) {
         if (url.indexOf('/projects') === -1) {
             return
@@ -8,7 +12,7 @@
         parser.href = url;
 
 
-        $('<iframe>', { src: 'https://www.backerkit.com' + parser.pathname + '/iframe', frameBorder: "0", height: '400px', width: prependTarget.width(), scrolling: 'no' }).prependTo(prependTarget);
+        $('<iframe>', { src: domainRoot() + parser.pathname + '/iframe', frameBorder: "0", scrolling: 'no', style:'height:435px;' + "width:" + prependTarget.width() + "px; margin:10px auto; "}).prependTo(prependTarget);
     }
 
     function doKickstarter() {
@@ -23,7 +27,7 @@
         }
         url = url.replace('/creator_bio');
 
-        var surveyIframe = $('<iframe>', { src: 'https://www.backerkit.com/master_backer_accounts/iframe', frameBorder: "0", style:'display:none;', width: '100%', height: '40px', scrolling: 'no', id:'bk-survey-iframe' })
+        var surveyIframe = $('<iframe>', { src: domainRoot() + '/master_backer_accounts/iframe', frameBorder: "0", style:'display:none;', width: '100%', height: '40px', scrolling: 'no', id:'bk-survey-iframe' })
         surveyIframe.prependTo($('body'));
 
         window.addEventListener("message", function (event) {
@@ -36,7 +40,7 @@
         }, false);
 
         setTimeout(function(){
-            surveyIframe[0].contentWindow.postMessage("hello there!", "https://www.backerkit.com");
+            surveyIframe[0].contentWindow.postMessage("hello there!", domainRoot());
         }, 2000)
 
 
@@ -49,9 +53,23 @@
         insertIframe(url, prependTarget);
     };
 
-    if (location.host.indexOf('kickstarter') === -1) {
-        doIndiegogo();
-    } else {
+    function doBackerKit(){
+        var metadata = document.querySelector('meta[name="backertracker-canonical"]')
+
+        if(metadata){
+            var url = metadata.dataset.url,
+                prependTarget = metadata.dataset.target;
+                insertIframe(url, $('#' + prependTarget));
+        }
+    }
+
+    var href = location.href;
+
+    if (href.indexOf('kickstarter.com') !== -1) {
         doKickstarter();
+    } else if (href.indexOf('backerkit.com/c') !== -1 || href.indexOf('backerkit.test/c') !== -1) {
+        doBackerKit();        
+    } else {
+        doIndiegogo();
     }
 })();
