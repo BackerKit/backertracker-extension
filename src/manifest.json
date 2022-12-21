@@ -3,7 +3,7 @@
     "manifest_version": 3,
     "name": "BackerTracker by BackerKit",
     "short_name":"BK Tracker",
-    "version": "9.0",
+    "version": "9.1",
     "description": "Show BackerTracker on Crowdfunding projects",
   
     "icons": {
@@ -13,7 +13,7 @@
     },
     "content_scripts": [
       {
-        "matches": ["*://*.kickstarter.com/projects/*", "*://*.indiegogo.com/projects/*", "*://*.backerkit.com/c/*", "*://*.backerkit.test/c/*"],
+        "matches": ["*://*.kickstarter.com/projects/*", "*://*.indiegogo.com/projects/*", "*://*.backerkit.com/c/*" ],
         "js": ["main.js"]
       }
     ]
