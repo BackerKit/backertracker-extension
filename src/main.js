@@ -4,20 +4,31 @@
         return 'https://www.backerkit.com';
     }
 
+    function canonicalUrl(){
+        return document.querySelector("*[rel='canonical']").href
+    }
+
     function insertIframe(url, prependTarget) {
         if (url.indexOf('/projects') === -1) {
             return
         }
         var parser = document.createElement('a');
+        
         parser.href = url;
 
+        var iframe =  document.createElement('iframe');
 
-        $('<iframe>', { src: domainRoot() + parser.pathname + '/iframe', frameBorder: "0", scrolling: 'no', style:'height:435px;' + "width:" + prependTarget.width() + "px; margin:10px auto; "}).prependTo(prependTarget);
+        iframe.src =  domainRoot() + parser.pathname + '/iframe';
+        iframe.frameBorder =  "0";
+        iframe.scrolling =  'no';
+        iframe.style = 'height: 435px; ' + 'width: ' + prependTarget.offsetWidth + 'px; margin:10px auto; ';
+        prependTarget.prepend(iframe)
     }
 
     function doKickstarter() {
-        var url = $("*[rel='canonical']").first().attr('href'),
-            prependTarget = $('.NS_projects__hero_funding .container-flex, .NS_projects__hero_spotlight .container-flex, .NS_projects__content').first();
+
+        var url = canonicalUrl(),
+            prependTarget = document.querySelector('.NS_projects__hero_funding .container-flex, .NS_projects__hero_spotlight .container-flex, .NS_projects__content');
 
         if (url === undefined) {
             return;
@@ -26,30 +37,36 @@
             return;
         }
         url = url.replace('/creator_bio');
-
-        var surveyIframe = $('<iframe>', { src: domainRoot() + '/master_backer_accounts/iframe', frameBorder: "0", style:'display:none;', width: '100%', height: '40px', scrolling: 'no', id:'bk-survey-iframe' })
-        surveyIframe.prependTo($('body'));
-
-        window.addEventListener("message", function (event) {
-            if(event.origin.indexOf('www.backerkit.') === -1)
-                return
-               
-            var showIframe = event.data.split(':')[1]
-            if(showIframe == 'true')
-                surveyIframe.hidden = false
-        }, false);
-
-        setTimeout(function(){
-            surveyIframe[0].contentWindow.postMessage("hello there!", domainRoot());
-        }, 2000)
-
-
+        
         insertIframe(url, prependTarget);
+
+        // var surveyIframe =  document.createElement('iframe')
+        
+        // surveyIframe.src =  domainRoot() + '/users/iframe';
+        // surveyIframe.frameBorder =  "0";
+        // surveyIframe.scrolling =  'no';
+        // surveyIframe.style = 'width:100%; height:40px';
+        // surveyIframe.id = 'bk-survey-iframe'
+        // document.body.prepend(surveyIframe);
+            
+        // window.addEventListener("message", function (event) {
+        //     if(event.origin.indexOf('www.backerkit.') === -1)
+        //         return
+               
+        //     var showIframe = event.data.split(':')[1]
+        //     if(showIframe == 'true')
+        //         surveyIframe.hidden = false
+        // }, false);
+
+        // setTimeout(function(){
+        //     surveyIframe[0].contentWindow.postMessage("hello there!", domainRoot());
+        // }, 2000)
+
     };
 
     function doIndiegogo() {
-        var url = $("*[rel='canonical']").first().attr('href').split('/x/')[0],
-            prependTarget = $('.campaignLayout-midContent');
+        var url = canonicalUrl().split('/x/')[0],
+            prependTarget = document.querySelector('.campaignLayout-midContent');
         insertIframe(url, prependTarget);
     };
 
@@ -58,8 +75,8 @@
 
         if(metadata){
             var url = metadata.dataset.url,
-                prependTarget = metadata.dataset.target;
-                insertIframe(url, $('#' + prependTarget));
+                prependTarget = document.querySelector( "#" + metadata.dataset.target);
+                insertIframe(url, prependTarget);
         }
     }
 
