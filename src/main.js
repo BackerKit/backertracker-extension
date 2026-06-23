@@ -9,16 +9,20 @@
     }
 
     function insertIframe(url, prependTarget) {
+        if (!prependTarget || prependTarget.querySelector('iframe.bk-tracker')) {
+            return
+        }
         if (url.indexOf('/projects') === -1) {
             return
         }
         var parser = document.createElement('a');
-        
+
         parser.href = url;
 
         var iframe =  document.createElement('iframe');
 
         iframe.src =  domainRoot() + parser.pathname + '/iframe';
+        iframe.className =  'bk-tracker';
         iframe.frameBorder =  "0";
         iframe.scrolling =  'no';
         iframe.style = 'height: 435px; ' + 'width: ' + prependTarget.offsetWidth + 'px; margin:10px auto; ';
@@ -80,13 +84,23 @@
         }
     }
 
-    var href = location.href;
+    function run() {
+        var href = location.href;
 
-    if (href.indexOf('kickstarter.com') !== -1) {
-        doKickstarter();
-    } else if (href.indexOf('backerkit.com/c') !== -1 || href.indexOf('backerkit.test/c') !== -1) {
-        doBackerKit();        
-    } else {
-        doIndiegogo();
+        if (href.indexOf('kickstarter.com') !== -1) {
+            doKickstarter();
+        } else if (href.indexOf('backerkit.com/c') !== -1 || href.indexOf('backerkit.test/c') !== -1) {
+            doBackerKit();
+        } else {
+            doIndiegogo();
+        }
     }
+
+    run();
+
+    // BackerKit Crowdfunding uses Turbo Drive, which swaps the <body> on in-app
+    // navigation without a full document load. Without this, the tracker would
+    // only appear on a hard refresh. Re-run on each Turbo visit so it also
+    // renders when navigating to a project page from within the site.
+    document.addEventListener('turbo:load', run);
 })();
