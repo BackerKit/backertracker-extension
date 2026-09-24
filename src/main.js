@@ -1,90 +1,56 @@
-; (function () {
+(() => {
+    const BACKERKIT_ROOT = 'https://www.backerkit.com';
 
-    function domainRoot(){
-        return 'https://www.backerkit.com';
-    }
+    // Each site returns the project URL the tracker is for and the element
+    // to prepend it to, or null when this page shouldn't get a tracker.
+    const sites = [
+        {
+            matches: (host) => host.endsWith('kickstarter.com'),
+            find() {
+                const url = document.querySelector('link[rel="canonical"]')?.href;
+                if (!url || url.includes('creator_bio')) {
+                    return null;
+                }
+                const target = document.querySelector(
+                    '.NS_projects__hero_funding .container-flex, .NS_projects__hero_spotlight .container-flex, .NS_projects__content'
+                );
+                return { url, target };
+            },
+        },
+        {
+            matches: (host) => host.endsWith('backerkit.com'),
+            find() {
+                const meta = document.querySelector('meta[name="backertracker-canonical"]');
+                if (!meta?.dataset.url || !meta.dataset.target) {
+                    return null;
+                }
+                return { url: meta.dataset.url, target: document.getElementById(meta.dataset.target) };
+            },
+        },
+    ];
 
-    function canonicalUrl(){
-        return document.querySelector("*[rel='canonical']").href
-    }
-
-    function insertIframe(url, prependTarget) {
-        if (!prependTarget || prependTarget.querySelector('iframe.bk-tracker')) {
-            return
-        }
-        if (url.indexOf('/projects') === -1) {
-            return
-        }
-        var parser = document.createElement('a');
-
-        parser.href = url;
-
-        var iframe =  document.createElement('iframe');
-
-        iframe.src =  domainRoot() + parser.pathname + '/iframe';
-        iframe.className =  'bk-tracker';
-        iframe.frameBorder =  "0";
-        iframe.scrolling =  'no';
-        iframe.style = 'height: 435px; ' + 'width: ' + prependTarget.offsetWidth + 'px; margin:10px auto; ';
-        prependTarget.prepend(iframe)
-    }
-
-    function doKickstarter() {
-
-        var url = canonicalUrl(),
-            prependTarget = document.querySelector('.NS_projects__hero_funding .container-flex, .NS_projects__hero_spotlight .container-flex, .NS_projects__content');
-
-        if (url === undefined) {
+    function insertTracker({ url, target }) {
+        if (!target || document.querySelector('iframe.bk-tracker')) {
             return;
         }
-        if (url.indexOf('creator_bio') !== -1) {
+        const { pathname } = new URL(url, location.href);
+        if (!pathname.includes('/projects')) {
             return;
         }
-        url = url.replace('/creator_bio');
-        
-        insertIframe(url, prependTarget);
 
-        // var surveyIframe =  document.createElement('iframe')
-        
-        // surveyIframe.src =  domainRoot() + '/users/iframe';
-        // surveyIframe.frameBorder =  "0";
-        // surveyIframe.scrolling =  'no';
-        // surveyIframe.style = 'width:100%; height:40px';
-        // surveyIframe.id = 'bk-survey-iframe'
-        // document.body.prepend(surveyIframe);
-            
-        // window.addEventListener("message", function (event) {
-        //     if(event.origin.indexOf('www.backerkit.') === -1)
-        //         return
-               
-        //     var showIframe = event.data.split(':')[1]
-        //     if(showIframe == 'true')
-        //         surveyIframe.hidden = false
-        // }, false);
-
-        // setTimeout(function(){
-        //     surveyIframe[0].contentWindow.postMessage("hello there!", domainRoot());
-        // }, 2000)
-
-    };
-
-    function doBackerKit(){
-        var metadata = document.querySelector('meta[name="backertracker-canonical"]')
-
-        if(metadata){
-            var url = metadata.dataset.url,
-                prependTarget = document.querySelector( "#" + metadata.dataset.target);
-                insertIframe(url, prependTarget);
-        }
+        const iframe = document.createElement('iframe');
+        iframe.src = `${BACKERKIT_ROOT}${pathname}/iframe`;
+        iframe.className = 'bk-tracker';
+        iframe.scrolling = 'no';
+        iframe.style.cssText = 'border: 0; width: 100%; height: 435px; margin: 10px auto;';
+        target.prepend(iframe);
     }
 
     function run() {
-        var href = location.href;
-
-        if (href.indexOf('kickstarter.com') !== -1) {
-            doKickstarter();
-        } else if (href.indexOf('backerkit.com/c') !== -1 || href.indexOf('backerkit.test/c') !== -1) {
-            doBackerKit();
+        const site = sites.find((s) => s.matches(location.hostname));
+        const placement = site?.find();
+        if (placement) {
+            insertTracker(placement);
         }
     }
 
