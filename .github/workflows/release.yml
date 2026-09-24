@@ -1,0 +1,71 @@
+name: Release
+
+# Push a tag matching the manifest version (e.g. v9.4) to build one zip and
+# publish it to every store whose credentials are configured.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      HAS_AMO: ${{ secrets.AMO_JWT_ISSUER != '' }}
+      HAS_CHROME: ${{ secrets.CHROME_REFRESH_TOKEN != '' }}
+      HAS_EDGE: ${{ secrets.EDGE_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:system
+
+      - name: Check tag matches manifest version
+        id: version
+        run: |
+          version=$(node -p "require('./src/manifest.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match manifest version $version" >&2
+            exit 1
+          fi
+          echo "zip=dist/backertracker-extension-$version.zip" >> "$GITHUB_OUTPUT"
+
+      - run: npm run build
+
+      - name: Attach zip to GitHub Release
+        run: gh release create "$GITHUB_REF_NAME" "${{ steps.version.outputs.zip }}" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Publish to Firefox Add-ons
+        if: env.HAS_AMO == 'true'
+        run: npx web-ext sign --channel=listed --approval-timeout=0
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+
+      - name: Publish to Chrome Web Store
+        if: env.HAS_CHROME == 'true'
+        run: npx chrome-webstore-upload-cli@3 --source "${{ steps.version.outputs.zip }}"
+        env:
+          EXTENSION_ID: ${{ vars.CHROME_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
+      - name: Publish to Microsoft Edge Add-ons
+        if: env.HAS_EDGE == 'true'
+        uses: wdzeng/edge-addon@v2
+        with:
+          product-id: ${{ vars.EDGE_PRODUCT_ID }}
+          zip-path: ${{ steps.version.outputs.zip }}
+          api-key: ${{ secrets.EDGE_API_KEY }}
+          client-id: ${{ secrets.EDGE_CLIENT_ID }}
