@@ -25,6 +25,19 @@ describe('manifest', () => {
   it('no longer runs on Indiegogo', () => {
     expect(matches.some((m) => m.includes('indiegogo'))).toBe(false);
   });
+
+  it('declares its data collection for Firefox', () => {
+    const gecko = manifest.browser_specific_settings.gecko;
+    expect(gecko.data_collection_permissions).toEqual({ required: ['browsingActivity'] });
+    expect(gecko.strict_min_version).toBe('140.0');
+  });
+
+  it('ships icons at the sizes it declares', () => {
+    for (const [size, path] of Object.entries(manifest.icons)) {
+      const png = readFileSync(new URL(`../src/${path}`, import.meta.url));
+      expect([png.readUInt32BE(16), png.readUInt32BE(20)], path).toEqual([Number(size), Number(size)]);
+    }
+  });
 });
 
 describe('Kickstarter', () => {
