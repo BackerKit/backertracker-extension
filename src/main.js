@@ -68,12 +68,6 @@
 
     };
 
-    function doIndiegogo() {
-        var url = canonicalUrl().split('/x/')[0],
-            prependTarget = document.querySelector('.campaignLayout-midContent');
-        insertIframe(url, prependTarget);
-    };
-
     function doBackerKit(){
         var metadata = document.querySelector('meta[name="backertracker-canonical"]')
 
@@ -91,8 +85,6 @@
             doKickstarter();
         } else if (href.indexOf('backerkit.com/c') !== -1 || href.indexOf('backerkit.test/c') !== -1) {
             doBackerKit();
-        } else {
-            doIndiegogo();
         }
     }
 

@@ -1,0 +1,19 @@
+{
+  "name": "backertracker-extension",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --dir test",
+    "test:system": "playwright test",
+    "lint": "web-ext lint --warnings-as-errors",
+    "build": "web-ext build",
+    "dev": "web-ext run",
+    "dev:chrome": "web-ext run --target chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "jsdom": "^27.0.1",
+    "vitest": "^3.2.7",
+    "web-ext": "^10.7.0"
+  }
+}
