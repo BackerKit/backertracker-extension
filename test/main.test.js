@@ -52,6 +52,49 @@ describe('Kickstarter', () => {
     expect(iframes).toHaveLength(1);
     expect(iframes[0].src).toBe('https://www.backerkit.com/projects/elanlee/exploding-kittens/iframe');
   });
+
+  it('does nothing when the page has no canonical link', () => {
+    const doc = loadPage(
+      'https://www.kickstarter.com/projects/elanlee/exploding-kittens',
+      '<div class="NS_projects__content"></div>'
+    );
+
+    expect(doc.querySelectorAll('iframe.bk-tracker')).toHaveLength(0);
+  });
+
+  it('does nothing on the creator bio page', () => {
+    const doc = loadPage(
+      'https://www.kickstarter.com/projects/elanlee/exploding-kittens/creator_bio',
+      '<div class="NS_projects__content"></div>',
+      '<link rel="canonical" href="https://www.kickstarter.com/projects/elanlee/exploding-kittens/creator_bio">'
+    );
+
+    expect(doc.querySelectorAll('iframe.bk-tracker')).toHaveLength(0);
+  });
+
+  it('sizes the iframe to its container instead of a fixed pixel width', () => {
+    const doc = loadPage(
+      'https://www.kickstarter.com/projects/elanlee/exploding-kittens',
+      '<div class="NS_projects__content"></div>',
+      '<link rel="canonical" href="https://www.kickstarter.com/projects/elanlee/exploding-kittens">'
+    );
+
+    const iframe = doc.querySelector('iframe.bk-tracker');
+    expect(iframe.style.width).toBe('100%');
+    expect(iframe.style.height).toBe('435px');
+    expect(iframe.style.borderStyle).toBe('none');
+    expect(iframe.hasAttribute('frameborder')).toBe(false);
+  });
+
+  it('does not add a second tracker when one is already on the page', () => {
+    const doc = loadPage(
+      'https://www.kickstarter.com/projects/elanlee/exploding-kittens',
+      '<iframe class="bk-tracker"></iframe><div class="NS_projects__content"></div>',
+      '<link rel="canonical" href="https://www.kickstarter.com/projects/elanlee/exploding-kittens">'
+    );
+
+    expect(doc.querySelectorAll('iframe.bk-tracker')).toHaveLength(1);
+  });
 });
 
 describe('BackerKit Crowdfunding', () => {
@@ -72,6 +115,57 @@ describe('BackerKit Crowdfunding', () => {
     doc.dispatchEvent(new doc.defaultView.Event('turbo:load'));
 
     expect(doc.querySelectorAll('iframe.bk-tracker')).toHaveLength(1);
+  });
+
+  it('renders again after Turbo swaps in a new body', () => {
+    const doc = loadPage('https://www.backerkit.com/c/projects/exploding-kittens', '<div id="tracker"></div>', head);
+
+    doc.body.innerHTML = '<div id="tracker"></div>';
+    doc.dispatchEvent(new doc.defaultView.Event('turbo:load'));
+
+    expect(doc.querySelectorAll('#tracker iframe.bk-tracker')).toHaveLength(1);
+  });
+
+  it('finds a target whose id is not a valid CSS selector', () => {
+    const doc = loadPage(
+      'https://www.backerkit.com/c/projects/exploding-kittens',
+      '<div id="tracker:main"></div>',
+      head.replace('data-target="tracker"', 'data-target="tracker:main"')
+    );
+
+    expect(doc.getElementById('tracker:main').querySelectorAll('iframe.bk-tracker')).toHaveLength(1);
+  });
+
+  it('accepts a relative url in the meta tag', () => {
+    const doc = loadPage(
+      'https://www.backerkit.com/c/projects/exploding-kittens',
+      '<div id="tracker"></div>',
+      '<meta name="backertracker-canonical" data-url="/projects/exploding-kittens" data-target="tracker">'
+    );
+
+    expect(doc.querySelector('#tracker iframe.bk-tracker').src).toBe(
+      'https://www.backerkit.com/projects/exploding-kittens/iframe'
+    );
+  });
+
+  it('does nothing when the meta tag has no url', () => {
+    const doc = loadPage(
+      'https://www.backerkit.com/c/projects/exploding-kittens',
+      '<div id="tracker"></div>',
+      '<meta name="backertracker-canonical" data-target="tracker">'
+    );
+
+    expect(doc.querySelectorAll('iframe.bk-tracker')).toHaveLength(0);
+  });
+
+  it('is detected by hostname, not by text anywhere in the URL', () => {
+    const doc = loadPage(
+      'https://www.backerkit.com/c/projects/kickstarter.com-favorites',
+      '<div id="tracker"></div>',
+      head
+    );
+
+    expect(doc.querySelectorAll('#tracker iframe.bk-tracker')).toHaveLength(1);
   });
 });
 
