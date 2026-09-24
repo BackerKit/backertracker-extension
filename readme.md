@@ -31,8 +31,11 @@ npm run lint                         # web-ext lint (Firefox/AMO rules)
    git tag v9.4 && git push origin v9.4
    ```
 
-The Release workflow runs the tests, builds `dist/backertracker-extension-<version>.zip`,
-attaches it to a GitHub Release, and uploads it to each store that has credentials set:
+The Build extension workflow (`.github/workflows/build.yml`) runs the tests and builds
+`dist/backertracker-extension-<version>.zip` on every pull request and push to `master`;
+the zip is downloadable from the run's artifacts. It can also be started by hand from the
+Actions tab. On a tag it also attaches the zip to a GitHub Release and uploads it to each
+store that has credentials set:
 
 | Store           | Account     | Repo secrets                                                | Repo variables        |
 | --------------- | ----------- | ----------------------------------------------------------- | --------------------- |

@@ -1,0 +1,114 @@
+name: Build extension
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+# Only the release job needs to write. Building fetches tooling from npm, so it
+# gets no token that could push back to the repository.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:system
+
+      - name: Check tag matches manifest version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version=$(node -p "require('./src/manifest.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match manifest version $version" >&2
+            exit 1
+          fi
+
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension
+          path: dist/*.zip
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: extension
+          path: dist
+      - name: Attach zip to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
+
+  # Uploads the same zip to each store whose credentials are configured.
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    # A step cannot read the `secrets` context in its own `if`; a job-level
+    # boolean can, and carries no secret value.
+    env:
+      HAS_AMO: ${{ secrets.AMO_JWT_ISSUER != '' }}
+      HAS_CHROME: ${{ secrets.CHROME_REFRESH_TOKEN != '' }}
+      HAS_EDGE: ${{ secrets.EDGE_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: extension
+          path: dist
+      - name: Find the zip
+        id: zip
+        run: echo "path=$(ls dist/*.zip)" >> "$GITHUB_OUTPUT"
+
+      # web-ext signs from the source folder rather than the zip; it is built
+      # from the same commit.
+      - name: Publish to Firefox Add-ons
+        if: env.HAS_AMO == 'true'
+        run: npx web-ext sign --channel=listed --approval-timeout=0
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+
+      - name: Publish to Chrome Web Store
+        if: env.HAS_CHROME == 'true'
+        run: npx chrome-webstore-upload-cli@3 --source "${{ steps.zip.outputs.path }}"
+        env:
+          EXTENSION_ID: ${{ vars.CHROME_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
+      - name: Publish to Microsoft Edge Add-ons
+        if: env.HAS_EDGE == 'true'
+        uses: wdzeng/edge-addon@v2
+        with:
+          product-id: ${{ vars.EDGE_PRODUCT_ID }}
+          zip-path: ${{ steps.zip.outputs.path }}
+          api-key: ${{ secrets.EDGE_API_KEY }}
+          client-id: ${{ secrets.EDGE_CLIENT_ID }}
